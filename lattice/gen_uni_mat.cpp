@@ -1,26 +1,12 @@
 #ifndef _inc_gen_uni_mat_cpp
 #define _inc_gen_uni_mat_cpp
 
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
-#include <time.h>
-using namespace std;
-
-
-#include <NTL/mat_ZZ.h>
-
-NTL_CLIENT
-
-#include <boost/math/distributions.hpp>
 using namespace boost::math;
 
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+//Generating random unimodular matrix
 
 void gen_rref_mat(mat_ZZ& A, int seed){
   // generate a random upper-triangular matrix
-
   double alpha, beta;
   int dim;
   int i,j,k;
@@ -87,7 +73,7 @@ void gen_random_unimodular2(mat_ZZ &L,int dim,int seed,int bits,int vl=0) {
     
   int i,j,k;
   int reCompute, tries, max_tries;
-  max_tries = 500;  // in sage the default max_tries=200
+  max_tries = 5000;  // in sage the default max_tries=200
   tries = 0;
   
   mat_ZZ A, A_copy;
@@ -210,9 +196,9 @@ void gen_random_unimodular2(mat_ZZ &L,int dim,int seed,int bits,int vl=0) {
 	} else {
         }
 	if(tries > max_tries){
-	  //cout << "Error! set more tries." << endl;
-	  //cout << A[k]<<endl;
-	  //cout << next_row << endl;
+	  cout << "Error! set more tries." << endl;
+	  cout << A[k]<<endl;
+	  cout << next_row << endl;
 	  exit(1);
 	}
       }

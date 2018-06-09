@@ -15,14 +15,7 @@ bool FileExists(std::ostringstream& file_name) {
     return FileExists(file_name.str());
 }
 
-#include <errno.h>
-#include <sys/file.h>
-#include <fcntl.h>
-#include <unistd.h>
-
 int lock(std::string fname) {
-    
-
     struct flock fl;
     fl.l_type = F_WRLCK;
     fl.l_whence = SEEK_SET;
@@ -38,7 +31,7 @@ int lock(std::string fname) {
         }
         return fd;
     } else {
-        return -1;
+        return 99999999;
     }
 }
 
@@ -56,14 +49,11 @@ template <typename T> void savedoublevector(vector<vector<T> >& D,std::string fn
 
     do {
             fd = lock(fname);
-            cout << "lock_fd=" << fd << endl;
             usleep(100000);
     } while (fd<0);
 
     ofstream vstream;
-
     vstream.open(fname.c_str(),ios_base::trunc); 
-
     vstream << D.size() << endl;
 
     for (i=0;i<(int)D.size();i++) {
@@ -106,14 +96,10 @@ template <typename T> void loaddoublevector(vector<vector<T> >& D,std::string fn
         D[i+k].resize(j);
         for (j=0;j<(int)D[i+k].size();j++) {
             vstream >> D[i+k][j];
-            //cout << D[i+k][j] << endl;
         }
-        //cout << "len of D[" << i << "]=" << D[i+k].size() << endl;
     }
     vstream.close();
     unlock(fd);
-    //distinctvectorset(D);
-    //distinct(D);
 }
 
 template <typename T> void loaddoublevector(vector<vector<T> >& D,std::string fname) {
@@ -121,15 +107,12 @@ template <typename T> void loaddoublevector(vector<vector<T> >& D,std::string fn
 }
 
 template <typename T> void savearray(T* vol,int m,std::string fname) {
-    
     int fd = lock(fname);
     ofstream vstream;
     vstream.open(fname.c_str(),ios_base::trunc);
     int i;
 
     vstream << m << endl;
-    //vstream.precision(std::numeric_limits<longlongfloat>::digits10);
-
     for (i=1;i<=m;i++) {
         vstream << vol[i] << endl;
     }
@@ -137,12 +120,26 @@ template <typename T> void savearray(T* vol,int m,std::string fname) {
     unlock(fd);
 }
 
-template <typename T> void loadarray(T* vol,int max,std::string fname) {
+template <typename T> void savestdvector(std::vector<T>& d,std::string fname) {
+    int fd = lock(fname);
+    ofstream vstream;
+    vstream.open(fname.c_str(),ios_base::trunc);
+    int i;
+
+    int m = d.size();
+    vstream << m << endl;
+    for (i=0;i<m;i++) {
+        vstream << d[i] << endl;
+    }
+    vstream.close();
+    unlock(fd);
+}
+
+
+template <typename T> void loadstdvector(std::vector<T>& d,std::string fname) {
 
     int fd;
     fd = lock(fname);
-    //cout << fname << endl;
-    //cout << "lockfd=" << fd << endl;
     
     ifstream vstream;
     vstream.open(fname.c_str(),ios_base::in);
@@ -155,7 +152,32 @@ template <typename T> void loadarray(T* vol,int max,std::string fname) {
         vstream.open(fname.c_str(),ios_base::in);
     }
     
-    //vstream.precision(std::numeric_limits<longlongfloat>::digits10);
+    int i;
+    int m=0;
+    vstream >> m;
+    d.resize(m);
+    for (i=0;i<m;i++) {
+        vstream >> d[i];
+    }
+    vstream.close();
+    unlock(fd);
+}
+
+template <typename T> void loadarray(T* vol,int max,std::string fname) {
+
+    int fd;
+    fd = lock(fname);
+    ifstream vstream;
+    vstream.open(fname.c_str(),ios_base::in);
+    if (!vstream) {
+        //error?
+        cout << "vstream error?" << endl;
+        cout << fname << endl;
+        unlock(fd);
+        fd = lock(fname);
+        vstream.open(fname.c_str(),ios_base::in);
+    }
+    
     int i;
     int m=0;
     vstream >> m;
@@ -166,12 +188,11 @@ template <typename T> void loadarray(T* vol,int max,std::string fname) {
     unlock(fd);
 }
 
-
 void SaveLattice(mat_ZZ& L,std::string fname) {
     ofstream logstream;
     logstream.open(fname.c_str(),ios_base::trunc);
     logstream << L;
-	logstream.close();
+    logstream.close();
 }
 
 void SaveLattice(mat_ZZ& L,std::ostringstream& fname) {
@@ -186,7 +207,6 @@ void LoadLattice(mat_ZZ& L,std::string fname) {
         logstream >> L;
     }
     catch (std::exception e) {
-        cout << e.what() << endl;
         L.SetDims(1,1);
     }
     logstream.close();
@@ -203,6 +223,7 @@ template <typename T> void SaveElement(T& L,std::string fname) {
 	logstream.close();
 }
 
+
 template <typename T> void SaveElement(T& L,std::ostringstream& fname) {
     SaveElement(L,fname.str());
 }
@@ -218,9 +239,9 @@ template <typename T> void LoadElement(T& L,std::ostringstream& fname) {
     LoadElement(L,fname.str());
 }
 
-#include <boost/algorithm/string.hpp>
 
 std::string ReadConf(const std::string filename, const std::string arg1) {
+
   ifstream is(filename, ios_base::in);
   std::string line;
   while(getline(is, line)){
@@ -260,8 +281,6 @@ void WriteConf(const std::string filename, const std::string arg1, const std::st
   if(!exist_flag) os << arg1 << "=" << arg2 << std::endl;
 }
 
-
-// return -1 if specified directory is not accessible, otherwise return 0
 int mkdirRecursive(const std::string dir, const mode_t mode){
   std::string path = "";
   std::vector<std::string> v;
@@ -282,7 +301,7 @@ int mkdirRecursive(const std::string dir, const mode_t mode){
     else{
       path += "/" + (*itr);
       int ret = mkdir(path.c_str(), mode);
-      if(!((ret == 0) || (ret == EEXIST))) return -1;
+      if(!((ret == 0) || (errno == EEXIST))) return -1;
     }
   }
   return 0;
@@ -311,7 +330,47 @@ std::string makefullpath(std::string dir) {
     }
   }
   return path;
+}
 
+template <typename T> void vectortofile(std::vector<T>& data,std::string fname) {
+    ofstream logstream;
+    logstream.open(fname.c_str(),ios_base::trunc);
+    for (int i=0;i<data.size();i++) {
+        logstream << i << "\t" << data[i] << endl;
+    }
+    logstream.close();
+}
+
+template <typename T> void loadtable(std::vector<std::vector<T> >& table,std::string fname) {
+    
+    cout << "fname=" << fname << endl;
+    ifstream is;
+    is.open(fname.c_str(),ios::in);
+    if (FileExists(fname)==false) {
+        cout << "file not exist?";
+        exit(0);
+    }
+    
+    if (is.fail()) {
+        cout << "open failed?";
+        exit(0);
+        
+    }
+    std::vector<std::string> tempvs,tempvs2;
+    std::string tempstr;
+    while (getline(is, tempstr))
+    {
+        if (tempstr!="") tempvs.push_back(tempstr);
+    }
+    
+    table.resize(tempvs.size()); 
+    for (int i=0;i<tempvs.size();i++) {
+        boost::split(tempvs2, tempvs[i], boost::is_any_of("\t"));
+        table[i].resize(tempvs2.size());
+        for (int j=0;j<tempvs2.size();j++) {
+            table[i][j] = strtod(tempvs2[j].c_str(),NULL);
+        }
+    }
 }
 
 #endif

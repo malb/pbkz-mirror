@@ -1,135 +1,105 @@
+/*
+	progressive BKZ library by NICT security fundemental lab.
+	https://www2.nict.go.jp/security/pbkzcode/
+	contact email:pbkz-info@ml.nict.go.jp
+ */
+
 #ifndef _inc_pbkz_hpp
 #define _inc_pbkz_hpp
 
 //configures
+
 #define _include_svpchallenge_generator
+//If you want to use SVP challenge generator
+
 #define _include_idealchallenge_generator
+//If you want to use Ideal-SVP challenge generator
 
-//system includes
-#include <cstdlib>
-#include <sys/times.h>
-#include <sys/stat.h>
-#include <math.h>
-#include <time.h>
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>     
-#include <algorithm>
-#include <functional>        
-using namespace std;
+#define _allow_cachefiles
+//If you want to speed up the computation by using the cache files
+//Cache file directory is defined in bkz.conf
 
-//NTL
-#include <NTL/ZZ.h>
-#include <NTL/matrix.h>
-#include <NTL/vec_ZZ.h>
-#include <NTL/mat_ZZ.h>
-#include <NTL/mat_RR.h>
-#include <NTL/LLL.h>
-NTL_CLIENT
+#define _ibeta_approx_wrapper
+//Note: with this option, in pbkzsimboost.cppI use an approximation procedure to compute incomplete beta function 
+//          instead of boost's ibeta_inv() when x<10^(-20) because it sometimes returns "exceeds 200 iterations" error (boost 1_64_0)
 
-#include <omp.h>
+#include "libraries.hpp"
 
-//BKZ options (old interface)
-#define OPT_PREPROCESS 0x01
-#define OPT_MULTITHREAD 0x02
-#define OPT_FIRSTINDEX 0x04
-#define OPT_PREPROCESS2 0x08
-#define OPT_TIMELOG 0x10
-#define OPT_EXTENDBLOCKSIZE 0x20
-#define OPT_GHBASEDSKIP 0x40
-#define OPT_FIND_SHORT 0x80
-#define OPT_OPTIMIZE_PRUNING_FUNCTION 0x100
-
-        
 //To define verbose level (for readability in function call)
 #define VL0 0
 #define VL1 1
 #define VL2 2
 #define VL3 3
 #define VL4 4
-        
-#define optlevel0 0
-#define optlevel1 1
-#define optlevel2 2
-        
-//Define the maximum dimention of lattices
-//(used to allocate the shared memories)
-#define latticemaxdim 1000
+#define VL5 5
+#define VL6 6
+#define VL7 7
 
-//Max. # vectors returned by the enumeration subroutine
-#define maxfoundvec 1000
-        
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<30> > bkzfloat;
+
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<10> > float10;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<15> > float15;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<20> > float20;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<25> > float25;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<30> > float30;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<35> > float35;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<40> > float40;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<45> > float45;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<50> > float50;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<80> > float80;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<100> > float100;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<150> > float150;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<200> > float200;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<300> > float300;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<400> > float400;
+typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<500> > float500;
+
+
+#ifdef debug_display_info
+    #define debug_display(X)    if (debug_output!=0) { X };
+#else
+    #define debug_display(X)    {};
+#endif
+
         
 //Fundemental tools
+#include "stringtools.cpp"        
 #include "timetools.cpp"        
 #include "filetools.cpp"        
+#include "memorytools.cpp"
 #include "latticetools.cpp"        
-#include "vectorset.cpp"        
-        
-//LLL subroutines are used
-#include "../external/LLL_RR.c"
+#include "misc.cpp"
 
-//The following defines are adopted to NTL 9.7.0
-#define RowTransform RowTransformQP
-#define RowTransform2 RowTransform2QP
-#define red_fudge red_fudgeQP
-#define init_red_fudge init_red_fudgeQP
-#define inc_red_fudge inc_red_fudgeQP
-#define log_red log_redQP
-#define verbose verboseQP
-#define NumSwaps NumSwapsQP
-#define StartTime StartTimeQP
-#define LastTime LastTimeQP
-#define LLLStatus LLLStatusQP
-#define BKZConstant BKZConstantQP
-#define BKZThresh BKZThreshQP
-#define BKZStatus BKZStatusQP
-#define ComputeBKZConstant ComputeBKZConstantQP
-#include "../external/LLL_QP.c"
-/*
-#undef RowTransform
-#undef RowTransform2
-#undef red_fudge
-#undef log_red
-#undef verbose
-   */      
-//Tools for lattice vector enumeration
-#include "pruningfunc.cpp"
-#include "vectorenumeration.cpp"
-#include "vectorenumeration_close.cpp"
+#include <lattice/gen_uni_mat.cpp>
 
-        //progressive BKZ routines
-#include "pbkzsharemem.cpp"
-#include "pbkzproperty.cpp"
-#include "pbkzsupport.cpp"
-#include "pbkzmain.cpp"
-#include "pbkzinterface.cpp"
-
-
+//Challenge instance generator
+//from https://www.latticechallenge.org/svp-challenge/download/generator.zip
+// and https://www.latticechallenge.org/ideallattice-challenge/download/generator.zip
 #ifdef _include_svpchallenge_generator
     #include "../external/tools.h"
 #endif
-
 #ifdef _include_idealchallenge_generator
     #include <NTL/ZZX.h>
+    //The function set(X) conflicts with boost library
+    #define set NTL::set
     #include "../external/ideal.h"
+    #undef set
 #endif
-        
-        
-#include <string>
-#include <vector>
-#include <map>
 
-#include <boost/algorithm/string.hpp>
+#if defined(_include_svpchallenge_generator) || defined(_include_idealchallenge_generator)
+    #include <lattice/genlattice.cpp>
+#endif
 
-typedef std::map<std::string,std::string> stringmap;
-typedef std::vector<std::string> bkzstrategy;
-typedef std::vector<double> pruningfunction;
-
-
-
+#include <lattice/bkzlibwrapper.hpp>
+#include <lattice/genwrapper.cpp>
+#include <lattice/bkzconstants.hpp>
+#include <lattice/pfuncwrapper.cpp>
+#include <lattice/enumwrapper.cpp>
+#include <lattice/reductionwrapper.cpp>
+#include <lattice/randomizewrapper.cpp>
+#include <lattice/pbkzsimboost.cpp>
+#include <lattice/pbkzwrapper.cpp>
+#include <lattice/pbkzsimtimeboost.cpp>
 
 
 #endif

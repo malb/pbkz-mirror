@@ -1,9 +1,7 @@
 #ifndef _inc_time_tools
 #define _inc_time_tools
 
-
-#include <sys/time.h>
-
+//get wallclock time in the format "yyyy/mm/dd/hh:mm:ss"
 std::string timestr() {
     std::ostringstream ret;
     time_t timer;
@@ -29,6 +27,10 @@ double gettimeofday_sec() {
     struct timeval tv; 
     gettimeofday(&tv, NULL); 
     return tv.tv_sec + 0.000001 * tv.tv_usec; 
+}
+
+double getcputime() {
+    return (double)clock()/(double)CLOCKS_PER_SEC;
 }
 
 
