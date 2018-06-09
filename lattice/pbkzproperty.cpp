@@ -221,7 +221,7 @@ namespace progressive_bkz {
                 BP.preprocess = true;
                 BP.preprocess_at_least = 5;   
                 BP.preprocess_strategy = 1;
-                if (com=="preprocess2") BP.preprocess_strategy = 2;
+                if (rcom=="l2") BP.preprocess_strategy = 2;
             }
             if (com=="preprocessonly") {
                 BP.preprocessonly = true;

@@ -8,7 +8,7 @@
 #define orderMI 1
 #define orderMD 2
     
-
+//#define pfdebug
 
 #include "pruningfuncsupport.cpp"
 #include "vectorenumeration.cpp"
@@ -80,6 +80,7 @@ namespace pruning_func {
             small_modify_a[i] = new double[500];
             for (j=0;j<500;j++) small_modify_a[i][j] = -1;
         }
+
 
         pfsavedir =  makefullpath(ReadConf("bkz.conf","pfcache"));
         mkdirRecursive(pfsavedir.c_str(), 0777);
@@ -225,9 +226,11 @@ namespace pruning_func {
         
         //read_from_cache
 #ifndef pfdebug
+ /*
         if (pfreadfromcache(R,p0,dim,delta,opt)==true) {
             return R[0];
         }
+  */ 
 #endif
         //generating function
         if (dim<20) {
@@ -245,10 +248,14 @@ namespace pruning_func {
                 }
                 return pp;
             }            
-            
-            
         }
 
+        if (p0>=1.0) {
+            int i;
+            for (i=1;i<=dim;i++) R[i] = 1.0;
+            return 1.0;
+        }
+        
         //cout << "generating pfunc: prob=" << p0 << " delta=" << delta << " dim=" << dim << endl;
         double pu,pl;
         double du = 0,dl = 0;
@@ -613,7 +620,7 @@ namespace pruning_func {
                 for (i=0;i<=n;i++) cout << pf[i] << ",";
                 cout << endl;
                 for (i=1;i<=10;i++) cout << "Re-exact=" << to_double(Approx_prob(pf,n)) << endl;
-                for (i=1;i<=10;i++) cout << "Re-direct2=" << to_double(SamplingTools::PruningProbDirect(pf,n)) << endl;
+                for (i=1;i<=10;i++) cout << "Re-direct2=" << to_double(sampling_tools::PruningProbDirect(pf,n)) << endl;
 
                 exit(0);
             }

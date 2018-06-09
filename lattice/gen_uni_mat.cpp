@@ -1,5 +1,5 @@
-
-// g++ gen_uni_mat.cpp -std=gnu++11 -lntl -lgmp -lgsl -lgslcblas
+#ifndef _inc_gen_uni_mat_cpp
+#define _inc_gen_uni_mat_cpp
 
 #include <cstdio>
 #include <cstdlib>
@@ -21,7 +21,7 @@ using namespace boost::math;
 void gen_rref_mat(mat_ZZ& A, int seed){
   // generate a random upper-triangular matrix
 
-  double alpha, beta, randFromUnif, randFromBeta;
+  double alpha, beta;
   int dim;
   int i,j,k;
   ZZ sign;
@@ -57,8 +57,8 @@ void gen_rref_mat(mat_ZZ& A, int seed){
 }
 
 ZZ max(mat_ZZ& A){
-    //returns maximum absolute element
-    int i,j,dim;
+  //returns maximum absolute element
+  int i,j,dim;
   ZZ max_ent;
 
   dim = A.NumCols();
@@ -66,20 +66,20 @@ ZZ max(mat_ZZ& A){
   
   for(i=0;i<dim;i++)
     for(j=0;j<dim;j++)
-        max_ent = max(max_ent,abs(A[i][j]));
+      max_ent = max(max_ent,abs(A[i][j]));
   return max_ent;
 }
 
 ZZ max(vec_ZZ& v){
-    //returns maximum absolute element
-    int i,j,dim;
-    ZZ max_ent;
+  //returns maximum absolute element
+  int i,dim;
+  ZZ max_ent;
 
-    dim = v.length();
-    max_ent = abs(v[0]);
+  dim = v.length();
+  max_ent = abs(v[0]);
   
   for(i=1;i<dim;i++)
-        max_ent = max(max_ent,abs(v[i]));
+    max_ent = max(max_ent,abs(v[i]));
   return max_ent;
 }
 
@@ -139,12 +139,12 @@ void gen_random_unimodular2(mat_ZZ &L,int dim,int seed,int bits,int vl=0) {
 
     if (vl>=1) cout << "elapsed time for step 2: " << (clock()- time_start) / CLOCKS_PER_SEC << "sec." << endl;
     if (vl>=2) cout << "##### The unimodular matrix is as: #####\n" << A << endl;
-    if(determinant(A) == 1)
+    if(determinant(A) == 1){
       if (vl>=2) cout << "check determinant: ok!" << endl;
+    }
     else
       cout << "determinant ERROR!" << endl;
-
-
+    
   }else{ // the entries of unimodular matrix are bounded in bits bits
 
     time_start = clock();
@@ -259,3 +259,6 @@ void gen_random_unimodular2(mat_ZZ &L,int dim,int seed,int bits,int vl=0) {
 
   L = A;
 }
+
+
+#endif

@@ -11,7 +11,7 @@ namespace progressive_bkz {
 #define insert_all 0x01
 #define insert_gauss 0x02
 
-    int BasisUpdate(mat_ZZ& B,mat_ZZ* U,quad_float** mu,quad_float* c,quad_float* b,quad_float** B1,int jj,int bs,int slide,short** foundvec,double* foundlen,int fnum,int m,int strategy) {
+    int BasisUpdate(mat_ZZ& B,mat_ZZ* U,quad_float** mu,quad_float* c,quad_float* b,quad_float** B1,int jj,int bs,int slide,int** foundvec,double* foundlen,int fnum,int m,int strategy) {
 
         int i,j,k;
         int kk = jj + bs - 1;
@@ -112,7 +112,7 @@ namespace progressive_bkz {
 
             //Storing found vectors to the buffer
             for (int fi=0;fi<fct;fi++) {
-                short* uvtemp = foundvec[fi];
+                int* uvtemp = foundvec[fi];
                 for (i = jj; i <= kk; i++) {
                     if (uvtemp[i] == 0) continue;
                     conv(MU, uvtemp[i]);
@@ -168,7 +168,7 @@ namespace progressive_bkz {
         int slide;
         int findex; //# found vectors
         double* foundlen = bkz_share_double[8];
-        short** foundvec = bkz_share_foundvec;
+        int** foundvec = bkz_share_foundvec;
 
     #ifdef debug_clength_check
         quad_float* cback = BKZsharememory::bkz_share_quad_float2[0];   //mempry for volume factor
@@ -214,7 +214,7 @@ namespace progressive_bkz {
     }
 
 
-    void BKZpreprocessOPT(mat_ZZ& B,mat_ZZ* U,quad_float** mu,quad_float* c,quad_float* b,quad_float** B1,int& lcindex,int jj,int bs,int fnum,double probs,double radius,double enumpersec, int limitsec,int m,int parallel,int vl,int rl,vectorset* recp=0) {
+    void BKZpreprocessOPT(mat_ZZ& B,mat_ZZ* U,quad_float** mu,quad_float* c,quad_float* b,quad_float** B1,int& lcindex,int jj,int bs,int fnum,double probs,double radius,double enumpersec, int limitsec,int m,int parallel,int vl,int rl) {
         //Memo: vl=verbose level
         //      rl=recursive_level
 
@@ -465,12 +465,6 @@ namespace progressive_bkz {
         jj = BP.startindex-1;
         int update=1;
         double probs = BP.pruning_prob;
-        double current_b1len;
-        if (nolargeextract==0) {
-            current_b1len = to_double(sqrt(c(1)));
-        } else {
-            current_b1len = to_double(sqrt(qc[1]));
-        }
         int parallel=1;
         double entiregh;
         double entiredet; 
@@ -493,17 +487,11 @@ namespace progressive_bkz {
         if (iend<0) iend = m;
         if (istart > iend ) swap(istart,iend);
 
-
         
         //For finding short vector
         RR min_allenum_cost = to_RR(-1);
         mat_ZZ minB = B;
 
-        //For recording basis with min_fec
-        double minimum_fec;
-        if (BP.record_min_fec==true) {
-            minimum_fec = -1;
-        }
 
         //For logoutput
         ofstream logstream;
@@ -753,43 +741,7 @@ namespace progressive_bkz {
             }
 
             //end of output information and logfile
-            
-
             char supported=0;
-            if ((BP.supportVSflag==true) && (nolargeextract==1) && (jj<iend-beta[0]/2)) {
-                vectorset* list = BP.supportvs;
-
-                if (list->size()>0) {
-                    //compute target alpha
-                    cout << "supportVS(" << jj  << endl;
-                        //for (i=1;i<=iend;i++) cout << qc[i] << " ";
-                        //cout << endl;
-                    double clim = InitRadius(qc,jj-qastart+1,kk-jj+1,BP.init_radius,BP.init_mode);
-                    cout << "target proj_len=" << sqrt(clim) << endl;
-
-                    cout << "list.n=" << list->size() << endl;
-
-                    int ret;
-    /*
-                        compute_approx(B,m,n,qB1,qmu,qb,qc,U);
-                        cout << "before:";
-                        for (i=1;i<=iend;i++) cout << qc[i] << " ";
-                        cout << endl;
-                        cout << m << " " << n << " " << iend << endl;
-     */ 
-                    //ret = InsertVector(B,*list,jj-qastart+1,sqrt(clim)*0.9999);
-                    ret = InsertVector(B,*list,jj-qastart+1,sqrt(to_double(qc[jj-qastart+1]))*0.9999);
-                        compute_approx(B,m,n,qB1,qmu,qb,qc,U);
-                        //for (i=1;i<=iend;i++) cout << qc[i] << " ";
-                        //cout << endl;
-                        qlcindex = m;
-                    if (ret>=0) {
-                        supported=1;
-                    }
-                }            
-            }
-
-
 
             //need to extend blocksize?
             if ((nofirst==1) && (jj==1)) tour_max_cost = BP.extend_blocksize_initmax;
@@ -932,12 +884,23 @@ namespace progressive_bkz {
                     //Do preprocess
                     double clim = InitRadius(qc,jj-qastart+1,kk-jj+1,mod_init_radius,BP.init_mode);
                     double persec = lattice_enum::enum_speed_bench(BP.numthreads) * 1000000;
-                    //cout << "ps: " << persec << endl;
-                    if (nolargeextract==0) {
-                        BKZpreprocessOPT(localB,&localU ,qmu,qc,qb,qB1,qlcindex,jj-qastart+1,kk-jj+1,BP.holdvecs,gmodprobs,sqrt(clim),persec,BP.preprocess_max_time,qasize,1,BP.verboselevel,0);
-                    } else {
-                        BKZpreprocessOPT(B,U ,qmu,qc,qb,qB1,qlcindex,jj,kk-jj+1,BP.holdvecs,gmodprobs,sqrt(clim),persec,BP.preprocess_max_time,qasize,1,BP.verboselevel,0);
+                    if (BP.preprocess_strategy==1) {
+                        if (nolargeextract==0) {
+                            BKZpreprocessOPT(localB,&localU ,qmu,qc,qb,qB1,qlcindex,jj-qastart+1,kk-jj+1,BP.holdvecs,gmodprobs,sqrt(clim),persec,BP.preprocess_max_time,qasize,1,BP.verboselevel,0);
+                        } else {
+                            BKZpreprocessOPT(B,U ,qmu,qc,qb,qB1,qlcindex,jj,kk-jj+1,BP.holdvecs,gmodprobs,sqrt(clim),persec,BP.preprocess_max_time,qasize,1,BP.verboselevel,0);
+                        }
+                    } 
+                    #ifdef __develop
+                    //under developing
+                    if (BP.preprocess_strategy==2) {
+                        if (nolargeextract==0) {
+                            BKZpreprocess2(localB,&localU ,qmu,qc,qb,qB1,qlcindex,jj-qastart+1,kk-jj+1,BP.holdvecs,gmodprobs,sqrt(clim),persec,BP.preprocess_max_time,qasize,1,BP.verboselevel,0);
+                        } else {
+                            BKZpreprocess2(B,U ,qmu,qc,qb,qB1,qlcindex,jj,kk-jj+1,BP.holdvecs,gmodprobs,sqrt(clim),persec,BP.preprocess_max_time,qasize,1,BP.verboselevel,0);
+                        }
                     }
+                    #endif
                 }
                 if (BP.preprocessonly==true) break;
                 

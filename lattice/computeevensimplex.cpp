@@ -6,12 +6,12 @@ template <typename T> T EvalAt(T* F,int n,double a) {
     //Assume a be a small number
     T ret,t;
     ret = 0;
-    
+
     int i;
     t = 1;
     for (i=0;i<n;i++) {
         ret += t * F[i];
-        t *= a;
+        t *= T(a);
     }
     return ret;
 }
@@ -19,12 +19,12 @@ template <typename T> T EvalAt(T* F,int n,double a) {
 template <typename T> void Integ(T* ret, int n,T* F,double low) {    
     int i;
     for (i=0;i<n;i++) {
-        ret[i+1] = F[i] / (i+1.0);
+        ret[i+1] = F[i] / T(i+1.0);
     }
     ret[0] = -EvalAt(ret,n,low);
     return;
 }
-
+ 
 #define opt_volume 0x01
 #define opt_volume_prob 0x02
 #define opt_surface 0x03
@@ -172,7 +172,7 @@ namespace EvenSimplex {
         t = 1;
         for (i=0;i<n;i++) {
             ret += t * F[i];
-            t *= a;
+            t *= to_RR(a);
         }
         return ret;;
     }
@@ -184,8 +184,9 @@ namespace EvenSimplex {
         int i,n;
         n = F.length();
         ret.SetLength(n+1);
+        ret[0] = 0;
         for (i=0;i<n;i++) {
-            ret[i+1] = F[i] / (i+1);
+            ret[i+1] = F[i] / to_RR(i+1);
         }
         ret[0] = -EvalAt(ret,low);
 
@@ -200,13 +201,12 @@ namespace EvenSimplex {
         //F[n,n] is the volume
         //pb is the probability that Pr{x <- surface of full-simplex}[x is in trancated simplex]
         
-        if (n<=120) {
+        if (n<=60) {
             return to_RR(EvenSimplexVolumeqf(n,R2,option));
         }
         
         int bprec = RR::precision();
-        RR::SetPrecision(max(n,80));
-        //RR::SetPrecision(128);
+        RR::SetPrecision(max(2*n,120));
         
         int i,j;
         vec_RR** F;
@@ -215,6 +215,7 @@ namespace EvenSimplex {
 
         F[1][0].SetLength(2);
         F[1][0][1] = 1; //F[1,0]=y
+
         F[1][1].SetLength(2);
         F[1][1][0] = R2[1]; //F[1,0]=R_1
 
@@ -223,7 +224,17 @@ namespace EvenSimplex {
             for (j=1;j<=i;j++) {
                 F[i][j] = Integ(F[i-1][j],R2[j]);
                 F[i][j][0] += EvalAt(F[i][j-1],R2[j]); 
+                //cout << "F[" << i << "," << j << "]=";
+                //for (int k=i-j;k>=0;k--) cout << F[i][j][k] << "*x^" << k << " ";
+                //cout << endl;
+                if (i==j) {
+                    RR v;
+                    v = F[i][i][0];
+                    for (int k=2;k<=i;k++) v *= k;
+                    //cout << "frac_check(" << i << "): " << F[i][i] << " ... " << v << endl;
+                }
             }
+            
         }
     /*    
         RR pb = EvalAt(F[n-1][n-1],to_RR(R2[n-1]));
@@ -234,29 +245,30 @@ namespace EvenSimplex {
     */
         RR ret;
 
-        if ((option==opt_volume) || (opt_volume_prob)) {
+        if ((option==opt_volume) || (option==opt_volume_prob)) {
             ret = F[n][n][0];
         }
-        if ((option==opt_surface) || (opt_surface_prob)) {
+        //cout << "ret=" << ret << endl;
+
+        if ((option==opt_surface) || (option==opt_surface_prob)) {
             ret = EvalAt(F[n-1][n-1],R2[n-1]);
         }
+        //cout << ret << endl;
 
         if (option==opt_surface_prob) {
             for (i=2;i<=n-1;i++) ret *= i;
         }
+        //cout << ret << endl;
 
         if (option==opt_volume_prob) {
             for (i=2;i<=n;i++) ret *= i;
+            //cout << "last_check: " << ret << endl;
         }
+        //cout << ret << endl;
 
         for (i=0;i<=n;i++) delete [] F[i];
         delete [] F;
         RR::SetPrecision(bprec);
-
-        if ((ret<=0) || (ret>=1)) {
-            return to_RR(EvenSimplexVolumeqf(n,R2,option));
-        }
-
         return ret;
     }
     

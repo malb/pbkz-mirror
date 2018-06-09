@@ -1,8 +1,8 @@
 
 ####################
 Progressive BKZ Library
-Version 1.0
-Released date 2016/05/02
+Version 1.1
+Released date 2016/06/29
 
 Contact email address:
 pbkz-info@ml.nict.go.jp
@@ -199,8 +199,10 @@ Example: ./a.out -if lll100.txt -pfunc -pf pfunc100.txt -p 0.0005 -a 1 -vl 3 -op
 ###
 Lattice vector enumeration
 ###
-Run ENUM search algorithm with a given radius parameter alpha and success probability.
+Run ENUM search algorithm to find short vectors with a given radius parameter alpha and success probability.
 %./a.out -if (input basis file) -enum -alpha (radius) -prob (probability) -of (output file) -lf (logfile) -nt (number of threads) -optimize (time in seconds to optimize pruning function) -preprocess (time in seconds to preprocess the input basis)
+
+To find close vectors given by a vector file (NTL format), use "-enum -cvp vec.txt" instead of "-enum" option.
 
 
 ####################
@@ -224,6 +226,20 @@ Any errors or omissions in the manual can also be reported to
 the same address as pbkz-info@ml.nict.go.jp.
 
 
+#############
+   HISTORY
+#############
+
+
+2016/06/29 v1.1
+
+ - Fixed bugs in computing pruning functions in higher dimensions (>150)
+ - Added new command for simulating Gram-Schmidt Lengths 
+ - Added new command for lattice vector enumeration to find close vectors
+
+2016/05/02 v1.0
+
+
 ########################
    MISCELLANEOUS INFO.
 ########################
@@ -232,5 +248,12 @@ Subroutine to generate Unimodular matrices (lattice/gen_uni_mat.cpp)
 is recoded from the open source code Sage-7.1, where the function is Ågrandom_unimodular_matrix()Åh.
 
 This library is not thread-safe.
+
+
+
+
+
+
+
 
 

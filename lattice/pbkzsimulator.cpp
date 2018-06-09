@@ -535,7 +535,6 @@ namespace progressive_bkz {
         int minbeta = eb;
 
         if (eb<70) beta = eb+1; 
-        //if (eb<50) beta = eb+10; 
 
         while (1) {
             cost = TimeBKZ(n,sb,eb,beta,A,W,model);

@@ -38,8 +38,9 @@ RR VolumeBall(int k,double radius) {
     return ret;
 }
 
-template <typename T> void GramSchmidt(mat_ZZ& L,T** mu,T* rlen,int n) {
+template <typename T> void GramSchmidt(mat_ZZ& L,T** mu,T* rlen,int n,int ioffset=0,int joffset=0) {
 
+    //indexes are slided by ioffset and joffset
 
     int i,j,k;
     T** r;
@@ -63,14 +64,14 @@ template <typename T> void GramSchmidt(mat_ZZ& L,T** mu,T* rlen,int n) {
         }
     }
     for (j=0;j<n;j++) {
-        conv(rlen[j],r[j][j]);    // = |b*_j|^2
+        conv(rlen[j+ioffset],r[j][j]);    // = |b*_j|^2
     }
     
     for (i=0;i<n;i++) {
         for (j=0;j<i;j++) {
-            conv(mu[i][j],mur[i][j]);
+            conv(mu[i+ioffset][j+joffset],mur[i][j]);
         }
-        mu[i][i] = 1;
+        mu[i+ioffset][i+joffset] = 1;
     }
 
     for (i = 0;i<n;i++) delete [] r[i];
@@ -319,7 +320,7 @@ namespace lattice_tools {
 
     
     
-    void alpha_decompose(double* dip,vec_ZZ& d,mat_ZZ& li,quad_float **mu) {
+    template <typename T> void alpha_decompose(T* dip,vec_ZZ& d,mat_ZZ& li,quad_float **mu,int offset=0) {
 
         //d[0...n-1]: vector
         //li[0...n-1][0..n-1]: lattice
@@ -330,25 +331,25 @@ namespace lattice_tools {
         int n = li.NumRows();
         for (i=0;i<n;i++) {
             dip[i] = 0;
-            for (k=0;k<n;k++) dip[i] += to_double(d[k] * li[i][k]);        //<d[j].b[i]>
-            for (k=0;k<i;k++) dip[i] -= to_double(mu[i][k]) * dip[k];     //<d[j],b*[i]>
+            for (k=0;k<n;k++) dip[i] += conv<T>(d[k] * li[i][k]);        //<d[j].b[i]>
+            for (k=0;k<i;k++) dip[i] -= conv<T>(mu[i+offset][k+offset]) * dip[k];     //<d[j],b*[i]>
         }
     }
 
-    void alpha_decompose(double* alpha,vec_ZZ& v,mat_ZZ& L,int opt=0) {
+    template <typename T> void alpha_decompose(T* alpha,vec_ZZ& v,mat_ZZ& L,int opt=0) {
         initialize();
         GramSchmidt(L,mu,c,L.NumRows());
         alpha_decompose(alpha,v,L,mu);
         if (opt==1) {
             for (int i=0;i<L.NumCols();i++) {
                 //to adjust v=\sum alpha[i].b*[i] <=> dip[i]=alpha[i]
-                alpha[i] /= to_double(c[i]);    
+                alpha[i] /= conv<T>(c[i]);    
             }
         }
         if (opt==2) {
             for (int i=0;i<L.NumCols();i++) {
                 //to adjust v=\sum alpha[i].b*[i] <=> dip[i]=alpha[i]*|b*[i]|
-                alpha[i] /= sqrt(to_double(c[i]));    
+                alpha[i] /= sqrt(conv<T>(c[i]));    
             }
         }
     }

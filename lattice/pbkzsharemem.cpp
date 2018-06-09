@@ -5,7 +5,7 @@ namespace progressive_bkz {
     //shared memory
     int meminit=0;
     double** bkz_share_double;
-    short** bkz_share_foundvec;
+    int** bkz_share_foundvec;
     long** bkz_share_long;
     quad_float** bkz_share_quad_float2;
     quad_float*** bkz_share_quad_float3;
@@ -49,14 +49,14 @@ namespace progressive_bkz {
     
         bkz_share_double = new double*[15+numthread];
         bkz_share_long = new long*[10+numthread];
-        bkz_share_foundvec = new short*[maxfoundvec];
+        bkz_share_foundvec = new int*[maxfoundvec];
         bkz_share_quad_float2 = new quad_float*[30];
         bkz_share_quad_float3 = new quad_float**[10];
 	bkz_share_RR2 = new RR*[30];
         bkz_share_RR3 = new RR**[10];
         for (i=0;i<15+numthread;i++) bkz_share_double[i] = new double[latticemaxdim];
         for (i=0;i<10+numthread;i++) bkz_share_long[i] = new long[latticemaxdim];
-        for (i=0;i<maxfoundvec;i++) bkz_share_foundvec[i] = new short[latticemaxdim];
+        for (i=0;i<maxfoundvec;i++) bkz_share_foundvec[i] = new int[latticemaxdim];
         
         for (i=0;i<10;i++) {
             bkz_share_quad_float3[i] = new quad_float*[latticemaxdim];

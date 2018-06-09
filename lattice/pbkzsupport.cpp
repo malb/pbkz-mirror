@@ -254,8 +254,6 @@ void computeorthogonal(std::vector<double>& a,std::vector<double>& b) {
     }
 }
 
-
-
 void Insert(mat_ZZ& L,vec_ZZ& v,int index) {
     int n,m;
     int i,j;
@@ -286,120 +284,6 @@ void Insert(mat_ZZ& L,vec_ZZ& v,int index) {
     L.SetDims(n,m);
     return;
 }
-
-void margevectorset(vectorset& V,vectorset& W) {
-    int i;
-    for (i=0;i<(int)W.size();i++) {
-        V.push_back(W[i]);
-    }
-}
-
-void distinctvectorset(vectorset& D,int opt=0) {
-
-    if (opt==1) {
-        //duplication by symmetry
-        int i,j;
-        for (i=0;i<(int)D.size();i++) {
-            j = 0;
-            while (j<(int)D[i].size() && (D[i][j]==0)) j++;
-            if ((j<(int)D[i].size()) && (D[i][j]<0)) {
-              for (j=0;j<(int)D[i].size();j++) D[i][j] = -D[i][j];
-            }
-        }
-    }
-    sort(D.begin(),D.end());
-    D.erase(unique(D.begin(),D.end()),D.end());
-}
-
-
-int InsertVector(mat_ZZ& L,vectorset &list,int jj,double clim) {
-
-    int i,j,k;
-    int n = L.NumCols();
-    if (list.size()<=0) return -1;
-
-    std::vector<std::vector<double> > d;
-    convert_to_double(d,list,1);
-
-    std::vector<std::vector<double> > li; //integer of L
-    li.resize(n);
-    for (i=0;i<n;i++) {
-        li[i].resize(n);
-        for (j=0;j<n;j++) conv(li[i][j],L[i][j]); 
-    }
-
-    std::vector<std::vector<double> > dip;
-    dip.resize(d.size());
-    for (i=0;i<(int)d.size();i++) dip[i].resize(d[i].size());        //dip[i][j]=<d[i],b*[j]>
-
-    std::vector<std::vector<double> > dnorm;
-    dnorm.resize(d.size());
-    for (i=0;i<(int)d.size();i++) dnorm[i].resize(d[i].size());        //dnorm[i][j] = |proj_j(d[i])|^2
-    
-    //Allocating memory
-    progressive_bkz::sharememalloc();
-    quad_float **mu = progressive_bkz::bkz_share_quad_float3[2];
-    quad_float *c = progressive_bkz::bkz_share_quad_float2[3]; // squared lengths of Gramm-Schmidt basis vectors
-    GramSchmidt(L,mu,c,L.NumCols());
-
-    //for (i=0;i<10;i++) cout << "c[" << i << "]=" << sqrt(c[i]) << " ";
-    //cout << endl;
-
-    double norm,minnorm;
-    int minindex = 0;
-    
-    //Simple insertion
-    for (i=0;i<jj;i++) {
-        //computing \pi_i(v)
-        //i=1 is identity
-      for (j=0;j<(int)d.size();j++) {
-            //compute dip[j][i]=<d[j],b*[i]>
-            dip[j][i] = 0;
-            for (k=0;k<(int)d[j].size();k++) dip[j][i] += d[j][k] * li[i][k];        //<d[j].b[i]>
-            for (k=0;k<i;k++) dip[j][i] -= to_double(mu[i][k]) * dip[j][k];     //<d[j],b*[i]>
-            
-            if (i==0) {
-                dnorm[j][i] = l2norm(d[j]) * l2norm(d[j]);
-            } else {
-                dnorm[j][i] = dnorm[j][i-1] - dip[j][i-1]*dip[j][i-1] / to_double(c[i-1]);
-            }
-        }
-    }
-
-    i = jj-1;
-        minnorm = -1;
-        for (j=0;j<(int)d.size();j++) {
-            //norm = dnorm[j][i];
-            if (dnorm[j][i]>1.0) {
-                norm = sqrt(dnorm[j][i]);
-                //cout << "norm[" << j << "," << i << "]=" << norm << endl;
-                if (minnorm==-1) {
-                    minnorm = norm;
-                    minindex = j;
-                } else if (minnorm > norm) {
-                    minnorm = norm;
-                    minindex = j;
-                }
-            }
-        }
-        if (minnorm < clim) {
-            cout << "insert d[" << minindex << "] at index=" << i << endl;
-            cout << "|b*i|: " << sqrt(c[i]) << " -> " << minnorm << "(" << clim << ")" << endl;
-            vec_ZZ v;
-            v.SetLength(n);
-            for (k=0;k<n;k++) v[k] = d[minindex][k];
-            cout << v << endl;
-            Insert(L,v,i);
-            return i;
-        }
-    
-
-    return -1;
-     
-     
- }
-
-
 void gen_hkzlattice(quad_float* c,int n,double alpha) {
     
     //generating |b*i|=alpha*GH(L') for all i

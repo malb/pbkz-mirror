@@ -121,16 +121,24 @@ namespace pruning_func {
         sum = to_RR(0);
         for (k=2;k<=n;k+=2) {
           if (R[k]!=0) {
-           for (i=1;i<=k/2;i++) R2[i] = R[2*i]/R[k];
+           for (i=1;i<=k/2;i++) {
+               R2[i] = R[2*i]/R[k];
+           }
             t = EvenSimplex::EvenSimplexVolume(k/2,R2,opt_volume_prob);
+            //cout << k << " " << t << " ";
             t *= VolumeBall(k,sqrt(R[k]));
             t2 *= radius_c * radius_c / to_RR(sqrt(c[n-k+1]*c[n-k+2]));
-
+            //cout << t << " " << t2 << " ";
             sum += t * t2;
+
+            if ((k>n/2) && (t*t2 < sum*0.0001)) break;  //output the approximated value
+            //cout << sum << endl;
           }
         }
+        
 
         if (sum<0) {
+            //bug??
             cout << "upper" << endl;
             for (i=1;i<=n;i++) {
                 cout << R[i] << endl;
